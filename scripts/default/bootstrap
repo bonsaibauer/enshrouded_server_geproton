@@ -1,0 +1,161 @@
+#!/bin/bash
+. "$(dirname "$0")/common"
+. "$(dirname "$0")/defaults"
+
+main() {
+  verifyVariables
+  createFolders
+  applyPermissions
+  setupSyslog
+  exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf
+}
+
+createFolders() {
+  info "Creating server folders (save, logs, backup)"
+  if [[ -n "$SERVER_SAVE_DIR" ]]; then
+    if [[ "$SERVER_SAVE_DIR" == /* ]]; then
+      mkdir -p "$SERVER_SAVE_DIR"
+    else
+      mkdir -p "$install_path/$SERVER_SAVE_DIR"
+    fi
+  fi
+
+  if [[ -n "$SERVER_LOG_DIR" ]]; then
+    if [[ "$SERVER_LOG_DIR" == /* ]]; then
+      mkdir -p "$SERVER_LOG_DIR"
+    else
+      mkdir -p "$install_path/$SERVER_LOG_DIR"
+    fi
+  fi
+
+  if [[ -n "$BACKUP_CRON" ]] && [[ -n "$BACKUP_DIR" ]]; then
+    if [[ "$BACKUP_DIR" == /* ]]; then
+      mkdir -p "$BACKUP_DIR"
+    else
+      mkdir -p "$install_path/$BACKUP_DIR"
+    fi
+  fi
+}
+
+# Apply user id and group id
+applyPermissions() {
+  info "Setting uid:gid of enshrouded to $PUID:$PGID"
+  groupmod -g "${PGID}" -o enshrouded
+  usermod -u "${PUID}" -o enshrouded
+  sed -i -E "s/^(enshrouded:x):[0-9]+:[0-9]+:(.*)/\\1:$PUID:$PGID:\\2/" /etc/passwd
+
+  chown -R enshrouded:enshrouded \
+    /opt/enshrouded \
+    /home/enshrouded \
+    /var/run/enshrouded
+
+  if [[ "$SERVER_SAVE_DIR" == /* ]]; then
+    debug "Setting permissions for $SERVER_SAVE_DIR"
+    chown -R enshrouded:enshrouded "$SERVER_SAVE_DIR"
+  fi
+
+  if [[ "$SERVER_LOG_DIR" == /* ]]; then
+    debug "Setting permissions for $SERVER_LOG_DIR"
+    chown -R enshrouded:enshrouded "$SERVER_LOG_DIR"
+  fi
+
+  if [[ "$BACKUP_DIR" == /* ]]; then
+    debug "Setting permissions for $BACKUP_DIR"
+    chown -R enshrouded:enshrouded "$BACKUP_DIR"
+  fi
+
+  chgrp enshrouded /etc/supervisor/supervisord.conf
+}
+
+# Configure syslog
+setupSyslog() {
+  info "Setting up syslogd - logging to stdout"
+
+  cat >"$rsyslog_conf" <<EOF
+\$FileOwner root
+\$FileGroup root
+\$PrivDropToUser root
+\$PrivDropToGroup root
+
+\$template custom,"%timegenerated:1:10:date-rfc3339% %timegenerated:12:23:date-rfc3339% %syslogtag%%msg:::sp-if-no-1st-sp%%msg:::drop-last-lf%\n"
+\$ActionFileDefaultTemplate custom
+
+:msg, contains, "[session] Pending packets list is full" stop
+*.*;cron,auth,authpriv.none /proc/self/fd/1          # send everything to stdout
+EOF
+
+  cat >"$supervisor_syslog_conf" <<EOF
+[program:rsyslogd]
+user=root
+environment=HOME="/root",USER="root",LANG="en_US.UTF-8",PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+command=/usr/sbin/rsyslogd -n
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+autostart=true
+autorestart=true
+priority=10
+EOF
+}
+
+verifyVariables() {
+  if [[ -n "$SERVER_SLOT_COUNT" ]]; then
+    if [[ "$SERVER_SLOT_COUNT" -lt 1 ]] || [[ "$SERVER_SLOT_COUNT" -gt 16 ]]; then
+      error "SERVER_SLOT_COUNT must be between 1 and 16 (actual: $SERVER_SLOT_COUNT)"
+      exit 1
+    fi
+  fi
+
+  if [[ -n "$SERVER_PORT" ]]; then
+    warn "[DEPRECATED}: SERVER_PORT is deprecated, please use only SERVER_QUERYPORT."
+    if [[ "$SERVER_PORT" -lt 1 ]] || [[ "$SERVER_PORT" -gt 65535 ]]; then
+      error "SERVER_PORT must be between 1 and 65535 (actual: $SERVER_PORT)"
+      exit 1
+    fi
+  fi
+
+  if [[ -n "$SERVER_QUERYPORT" ]]; then
+    if [[ "$SERVER_QUERYPORT" -lt 1 ]] || [[ "$SERVER_QUERYPORT" -gt 65535 ]]; then
+      error "SERVER_QUERYPORT must be between 1 and 65535 (actual: $SERVER_QUERYPORT)"
+      exit 1
+    fi
+  fi
+
+  if [[ -n "$SERVER_IP" ]]; then
+    if ! [[ "$SERVER_IP" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+      error "SERVER_IP must be a valid ipv4 address (actual: $SERVER_IP)"
+      exit 1
+    fi
+  fi
+
+  if [[ -n "$STEAM_API_PUBLIC_IP" ]]; then
+    if ! [[ "$STEAM_API_PUBLIC_IP" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+      error "STEAM_API_PUBLIC_IP must be a valid ipv4 address (actual: $STEAM_API_PUBLIC_IP)"
+      exit 1
+    fi
+  fi
+
+  if [[ -n "$PUID" ]]; then
+    if ! [[ "$PUID" =~ ^[0-9]+$ ]]; then
+      error "PUID must be a valid uid (actual: $PUID)"
+      exit 1
+    fi
+  fi
+
+  if [[ -n "$PGID" ]]; then
+    if ! [[ "$PGID" =~ ^[0-9]+$ ]]; then
+      error "PGID must be a valid gid (actual: $PGID)"
+      exit 1
+    fi
+  fi
+
+  if [[ -n "$UPDATE_CHECK_PLAYERS" ]]; then
+    if [[ "$UPDATE_CHECK_PLAYERS" != "true" ]] && [[ "$UPDATE_CHECK_PLAYERS" != "false" ]]; then
+      error "UPDATE_CHECK_PLAYERS must be true or false (actual: $UPDATE_CHECK_PLAYERS)"
+      exit 1
+    fi
+  fi
+}
+
+main

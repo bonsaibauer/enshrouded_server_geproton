@@ -1,0 +1,37 @@
+services:
+  enshrouded:
+    build:
+      context: .
+      dockerfile: ressources/Dockerfile
+    image: mornedhels/enshrouded-server:dev-proton
+    container_name: enshrouded
+    hostname: enshrouded
+    restart: unless-stopped
+    stop_grace_period: 90s
+    ports:
+      - "15637:15637/udp"
+    volumes:
+      - /home/enshrouded/enshrouded_server_geproton:/opt/enshrouded/server
+    environment:
+      - HOME=/home/enshrouded/enshrouded_server_geproton
+      - SERVER_NAME=Enshrouded Server
+      - SERVER_IP=0.0.0.0
+      - SERVER_SLOT_COUNT=16
+      - SERVER_QUERYPORT=15637
+      - SERVER_SAVE_DIR=./savegame
+      - SERVER_LOG_DIR=./logs
+      - SERVER_VOICE_CHAT_MODE=Proximity
+      - SERVER_ENABLE_VOICE_CHAT=true
+      - SERVER_ENABLE_TEXT_CHAT=true
+      - PUID=4711
+      - PGID=4711
+      - UPDATE_CRON=*/30 * * * *
+      - UPDATE_CHECK_PLAYERS=true
+      - BACKUP_CRON="*/30 * * * *"
+      - BACKUP_DIR=./backups
+      - BACKUP_MAX_COUNT=7
+      - RESTART_CRON="0 3 * * *"
+      - RESTART_CHECK_PLAYERS=true
+      - GAME_BRANCH=public
+      - STEAMCMD_ARGS=validate
+      - log_level=50

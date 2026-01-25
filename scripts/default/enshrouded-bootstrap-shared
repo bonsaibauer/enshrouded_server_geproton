@@ -1,0 +1,243 @@
+#!/bin/bash
+. "$(dirname "$0")/common"
+. "$(dirname "$0")/defaults"
+
+prepareEnshroudedAppFolders() {
+  mkdir -p "$install_path"
+}
+
+initCrontab() {
+  crontab=$(mktemp)
+
+  if [ -n "$UPDATE_CRON" ]; then
+    debug "creating cron for update checks (schedule: $UPDATE_CRON)"
+    echo "$UPDATE_CRON supervisorctl start enshrouded-updater >/dev/null 2>&1" >>"$crontab"
+  fi
+
+  if [ -n "$BACKUP_CRON" ]; then
+    debug "creating cron for backups (schedule: $BACKUP_CRON)"
+    echo "$BACKUP_CRON supervisorctl start enshrouded-backup >/dev/null 2>&1" >>"$crontab"
+  fi
+
+  if [ -n "$RESTART_CRON" ]; then
+    debug "creating cron for server restarts (schedule: $RESTART_CRON)"
+    echo "$RESTART_CRON supervisorctl start enshrouded-restart >/dev/null 2>&1" >>"$crontab"
+  fi
+
+
+  crontab "$crontab"
+  rm -f "$crontab"
+}
+
+prepareSteamA2sPythonLibrary() {
+  pip3 install python-a2s==1.3.0 --break-system-packages
+}
+
+bootstrapHook() {
+  if [ -n "$BOOTSTRAP_HOOK" ]; then
+    info "Running bootstrap hook: $BOOTSTRAP_HOOK"
+    eval "$BOOTSTRAP_HOOK"
+  fi
+}
+
+updateOrCreateEnshroudedServerConfig() {
+  if [[ ! -e ${install_path}/enshrouded_server.json ]]; then
+    mkdir -p ${install_path}
+    touch ${install_path}/enshrouded_server.json
+
+    # write json to file ${install_path}/enshrouded_server.json
+
+    cat >${install_path}/enshrouded_server.json << EOF
+{
+  "name": "Enshrouded Server",
+  "saveDirectory": "./savegame",
+  "logDirectory": "./logs",
+  "ip": "0.0.0.0",
+  "queryPort": 15637,
+  "slotCount": 16,
+  "voiceChatMode": "Proximity",
+  "enableVoiceChat": false,
+  "enableTextChat": false
+}
+EOF
+  fi
+
+  if [[ -n "$SERVER_NAME" ]]; then
+    debug "updating name to $SERVER_NAME"
+    echo "$(jq --arg name "$SERVER_NAME" '.name = $name' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  if [[ -n "$SERVER_SAVE_DIR" ]]; then
+    debug "updating saveDirectory to $SERVER_SAVE_DIR"
+    echo "$(jq --arg saveDirectory "$SERVER_SAVE_DIR" '.saveDirectory = $saveDirectory' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  if [[ -n "$SERVER_LOG_DIR" ]]; then
+    debug "updating logDirectory to $SERVER_LOG_DIR"
+    echo "$(jq --arg logDirectory "$SERVER_LOG_DIR" '.logDirectory = $logDirectory' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  if [[ -n "$SERVER_IP" ]]; then
+    debug "updating ip to $SERVER_IP"
+    echo "$(jq --arg ip "$SERVER_IP" '.ip = $ip' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  if [[ -n "$SERVER_QUERYPORT" ]]; then
+    debug "updating queryPort to $SERVER_QUERYPORT"
+    echo "$(jq --argjson queryPort "$SERVER_QUERYPORT" '.queryPort = $queryPort' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  if [[ -n "$SERVER_SLOT_COUNT" ]]; then
+    debug "updating slotCount to $SERVER_SLOT_COUNT"
+    echo "$(jq --argjson slotCount "$SERVER_SLOT_COUNT" '.slotCount = $slotCount' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  if [[ -n "$SERVER_VOICE_CHAT_MODE" ]]; then
+    debug "updating voiceChatMode to $SERVER_VOICE_CHAT_MODE"
+    echo "$(jq --arg voiceChatMode "$SERVER_VOICE_CHAT_MODE" '.voiceChatMode = $voiceChatMode' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  if [[ -n "$SERVER_ENABLE_VOICE_CHAT" ]]; then
+    debug "updating enableVoiceChat to $SERVER_ENABLE_VOICE_CHAT"
+    echo "$(jq --argjson enableVoiceChat "$SERVER_ENABLE_VOICE_CHAT" '.enableVoiceChat = $enableVoiceChat' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  if [[ -n "$SERVER_ENABLE_TEXT_CHAT" ]]; then
+    debug "updating enableTextChat to $SERVER_ENABLE_TEXT_CHAT"
+    echo "$(jq --argjson enableTextChat "$SERVER_ENABLE_TEXT_CHAT" '.enableTextChat = $enableTextChat' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  updateUserGroupConfig
+  updateGameSettingsConfig
+}
+
+updateUserGroupConfig() {
+  local group_count group_index group_param group_value
+  # get largest group index of env vars
+  group_count=$(compgen -A variable | grep -E "^SERVER_ROLE_[0-9]+_" | cut -d'_' -f3 | sort -nr | head -n1)
+
+  # check if userGroups array exists if not create empty array
+  if ! jq -e 'has("userGroups")' ${install_path}/enshrouded_server.json >/dev/null; then
+    debug "userGroups array does not exist, creating empty array"
+    echo "$(jq '.userGroups = []' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+
+  handleDeprecatedServerPassword
+
+  # add missing groups
+  for group_index in $(seq 0 $group_count); do
+    if ! jq -e --argjson group_index "$group_index" '.userGroups | has($group_index)' ${install_path}/enshrouded_server.json >/dev/null; then
+      debug "group $group_index does not exist, creating default group"
+      echo "$(jq --argjson group_index "$group_index" '.userGroups += [{"name": "Default", "password": "", "canKickBan": false, "canAccessInventories": false, "canEditBase": false, "canExtendBase": false, "reservedSlots": 0}]' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+    fi
+  done
+
+  for i in $(compgen -A variable | grep -E "^SERVER_ROLE_[0-9]+_"); do
+    group_index=$(echo $i | cut -d'_' -f3)
+    group_param=$(echo $i | cut -d'_' -f4-)
+    group_value=$(eval echo \$$i)
+
+    case $group_param in
+      NAME)
+        debug "updating group $group_index name to $group_value"
+        echo "$(jq --argjson group_index "$group_index" --arg name "$group_value" '.userGroups[$group_index].name = $name' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+        ;;
+      PASSWORD)
+        debug "updating group $group_index password to $group_value"
+        echo "$(jq --argjson group_index "$group_index" --arg password "$group_value" '.userGroups[$group_index].password = $password' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+        ;;
+      CAN_KICK_BAN)
+        debug "updating group $group_index canKickBan to $group_value"
+        echo "$(jq --argjson group_index "$group_index" --argjson canKickBan "$group_value" '.userGroups[$group_index].canKickBan = $canKickBan' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+        ;;
+      CAN_ACCESS_INVENTORIES)
+        debug "updating group $group_index canAccessInventories to $group_value"
+        echo "$(jq --argjson group_index "$group_index" --argjson canAccessInventories "$group_value" '.userGroups[$group_index].canAccessInventories = $canAccessInventories' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+        ;;
+      CAN_EDIT_WORLD)
+        debug "updating group $group_index canEditWorld to $group_value"
+        echo "$(jq --argjson group_index "$group_index" --argjson canEditWorld "$group_value" '.userGroups[$group_index].canEditWorld = $canEditWorld' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+        ;;
+      CAN_EDIT_BASE)
+        debug "updating group $group_index canEditBase to $group_value"
+        echo "$(jq --argjson group_index "$group_index" --argjson canEditBase "$group_value" '.userGroups[$group_index].canEditBase = $canEditBase' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+        ;;
+      CAN_EXTEND_BASE)
+        debug "updating group $group_index canExtendBase to $group_value"
+        echo "$(jq --argjson group_index "$group_index" --argjson canExtendBase "$group_value" '.userGroups[$group_index].canExtendBase = $canExtendBase' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+        ;;
+      RESERVED_SLOTS)
+        debug "updating group $group_index reservedSlots to $group_value"
+        echo "$(jq --argjson group_index "$group_index" --argjson reservedSlots "$group_value" '.userGroups[$group_index].reservedSlots = $reservedSlots' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+        ;;
+    esac
+  done
+}
+
+handleDeprecatedServerPassword() {
+  if [[ -n "$SERVER_PASSWORD" ]]; then
+    warn "SERVER_PASSWORD is deprecated, pls consider using SERVER_ROLE_<index>_PASSWORD instead"
+    warn "falling back to \"Default\" server role password"
+
+    # check if group 0 exists if not create it
+    if ! jq -e '.userGroups[0]' ${install_path}/enshrouded_server.json >/dev/null; then
+      debug "default group (index: 0) does not exist, creating default group."
+      echo "$(jq --argjson group_index "$group_index" '.userGroups += [{"name": "Default", "password": "", "canKickBan": false, "canAccessInventories": false, "canEditBase": false, "canExtendBase": false, "reservedSlots": 0}]' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+    fi
+
+    # check if group 0 name is "Default" if not return
+    if [[ "$(jq -r '.userGroups[0].name' ${install_path}/enshrouded_server.json)" != "Default" ]]; then
+      warn "default group (index: 0) has not the name \"Default\". Skipping password update!"
+      return
+    fi
+
+    debug "updating default group (index: 0) password to $SERVER_PASSWORD"
+    echo "$(jq --arg password "$SERVER_PASSWORD" '.userGroups[0].password = $password' ${install_path}/enshrouded_server.json)" > ${install_path}/enshrouded_server.json
+  fi
+}
+
+updateGameSettingsConfig() {
+  # Iterate over environment variables starting with SERVER_GS_
+  for var_name in $(compgen -A variable | grep '^SERVER_GS_'); do
+    local var_value
+    var_value=$(eval echo "\$$var_name")
+
+    # Skip if the variable is not set or is empty
+    if [[ -z "$var_value" ]]; then
+      continue
+    fi
+
+    local suffix="${var_name#SERVER_GS_}"
+    local jq_key_name # camelCase version of suffix
+    local full_jq_path
+    local jq_arg_option
+
+    # Convert Suffix (e.g., PLAYER_HEALTH_FACTOR) to jq key name (e.g., playerHealthFactor)
+    jq_key_name=$(echo "$suffix" | tr '[:upper:]' '[:lower:]' | awk -F_ '{for(i=1;i<=NF;i++){if(i==1){out=$i}else{out=out toupper(substr($i,1,1)) substr($i,2)}}}END{print out}')
+
+    if [[ "$suffix" == "PRESET" ]]; then
+      full_jq_path=".gameSettingsPreset"
+      jq_arg_option="--arg" # Preset value is always a string
+    else
+      full_jq_path=".gameSettings.$jq_key_name"
+      # Determine jq argument option based on the value
+      # Use --argjson for booleans (true/false) and numeric values
+      if [[ "$var_value" == "true" || "$var_value" == "false" || "$var_value" =~ ^[+-]?[0-9]+([.][0-9]+)?$ ]]; then
+        jq_arg_option="--argjson"
+      else
+        jq_arg_option="--arg" # Default to string
+      fi
+    fi
+
+    debug "Updating game setting: $var_name -> $full_jq_path = $var_value (using $jq_arg_option)"
+
+    local temp_json_file
+    temp_json_file=$(mktemp)
+    if jq "$jq_arg_option" val "$var_value" "$full_jq_path = \$val" "${install_path}/enshrouded_server.json" > "$temp_json_file"; then
+      mv "$temp_json_file" "${install_path}/enshrouded_server.json"
+    else
+      warn "Failed to update $var_name in enshrouded_server.json. JQ command failed."
+      rm -f "$temp_json_file" # Clean up temp file on failure
+    fi
+  done
+}
