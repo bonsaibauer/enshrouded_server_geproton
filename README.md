@@ -26,30 +26,6 @@ Grab a potion and read on: this is the most concise guide to spin up your own En
 - The repo Docker assets live in [`ressources/`](ressources); run builds via `docker compose -f ressources/docker-compose.yml up -d`.
 
 ---
-
-## 0. Preparing Your Environment
-
-### Prerequisites
-
-You can run the Enshrouded server inside a Docker container on **any operating system that supports Docker**, including but not limited to:
-
-| Production-Ready Linux               | Desktop/Test Only                  | Notes                                                  |
-|-------------------------------------|------------------------------------|--------------------------------------------------------|
-| ✅ Ubuntu 24.04 LTS (recommended)   | ✅ macOS (Docker Desktop)          | ⚠️ Not suitable for hosting a live server              |
-| ✅ Ubuntu 22.04 LTS                 | ✅ Windows 10/11 (WSL 2 + Docker Desktop) | ⚠️ Use for testing or development only       |
-| ✅ Ubuntu 20.04 LTS                 |                                    |                                                        |
-| ✅ Debian 12 / 11                   |                                    |                                                        |
-| ✅ Fedora 38+                       |                                    |                                                        |
-| ✅ Arch Linux                       |                                    | Rolling release — always up-to-date                    |
-| ✅ AlmaLinux / Rocky Linux 9 / 8    |                                    | CentOS alternatives                                    |
-| ✅ openSUSE Leap / Tumbleweed       |                                    |                                                        |
-
-You’ll need:
-
-- A system with Docker and Docker Compose installed
-- sudo or administrative privileges
-- `ufw` or firewall configuration (ensure port **15637** is open and forwarded)
-
 # 1. Installing Docker (Ubuntu 24.04 and Other Linux Systems)
 
 Docker allows you to run applications in isolated containers. It's ideal for deploying an Enshrouded dedicated server because it ensures consistency, portability, and easy management.
