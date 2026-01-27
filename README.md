@@ -102,18 +102,18 @@ Press `q` to exit the status screen.
 To allow the Docker container to persist game data and configurations, we create a dedicated system user and set up the correct directory.
 
 Run these commands as root or with `sudo`:
-### Create a system user 'enshrouded' without login shell
+### Step 2.1: Create a system user 'enshrouded' without login shell
 ```bash
 sudo useradd -m -r -s /bin/false enshrouded
 ```
-### Ensure the home directory exists
+### Step 2.2: Ensure the home directory exists
 ```bash
 sudo mkdir -p /home/enshrouded
 ```
 ```bash
 sudo mkdir -p /home/enshrouded/enshrouded_server_geproton
 ```
-### Set proper ownership 
+### Step 2.3 Set proper ownership 
 ```bash
 sudo chown 1001:1001 /home/enshrouded/enshrouded_server_geproton
 ```
@@ -121,18 +121,18 @@ sudo chown 1001:1001 /home/enshrouded/enshrouded_server_geproton
 > 🛡️ This ensures that the container can write to `/home/enshrouded` and all server data stays in one clean location.
 
 # 3. Deploy and Start docker container
-### Go to Directory:
+### Step 3.1 Go to Directory:
 ```bash
 cd /home/enshrouded/
 ```
-### Clone and enter the repo:
+### Step 3.2 Clone and enter the repo:
 ```bash
 git clone https://github.com/bonsaibauer/enshrouded_server_geproton.git
 ```
 ```bash
 cd enshrouded_server_geproton
 ```
-### Edit the bundled compose:
+### Step 3.3 Edit the bundled compose:
 ```bash
 nano ressources/docker-compose.yml
 ```
@@ -166,7 +166,7 @@ nano ressources/docker-compose.yml
 >
 > You will return to the shell after saving.
 
-### Start + logs:
+### step 3.4 Start + logs:
 ```bash
 docker compose -f ressources/docker-compose.yml up -d
 ```
