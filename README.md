@@ -121,18 +121,18 @@ sudo chown 1001:1001 /home/enshrouded/enshrouded_server_geproton
 > 🛡️ This ensures that the container can write to `/home/enshrouded` and all server data stays in one clean location.
 
 # 3. Deploy and Start docker container
-1) Go to Directory:
+### Go to Directory:
 ```bash
 cd /home/enshrouded/
 ```
-1) Clone and enter the repo:
+### Clone and enter the repo:
 ```bash
 git clone https://github.com/bonsaibauer/enshrouded_server_geproton.git
 ```
 ```bash
 cd enshrouded_server_geproton
 ```
-1) Edit the bundled compose:
+### Edit the bundled compose:
 ```bash
 nano ressources/docker-compose.yml
 ```
@@ -146,7 +146,7 @@ nano ressources/docker-compose.yml
      - uses Steam branch `public` and runs `validate` via `STEAMCMD_ARGS`.
    - Keep these defaults or adjust any env values directly in `ressources/docker-compose.yml` before starting.
 
-1) Docker Compose Defaults (Option B)
+### Docker Compose Defaults (Option B)
 
 | Setting / Key   | Description                                 | Default Value                          | Options / Notes                 |
 |-----------------|---------------------------------------------|----------------------------------------|---------------------------------|
@@ -166,7 +166,7 @@ nano ressources/docker-compose.yml
 >
 > You will return to the shell after saving.
 
-4) Start + logs:
+### Start + logs:
 ```bash
 docker compose -f ressources/docker-compose.yml up -d
 ```
