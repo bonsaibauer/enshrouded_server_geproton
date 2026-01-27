@@ -166,7 +166,7 @@ nano ressources/docker-compose.yml
 >
 > You will return to the shell after saving.
 
-### step 3.4 Start + logs:
+### Step 3.4 Start + logs:
 ```bash
 docker compose -f ressources/docker-compose.yml up -d
 ```
@@ -174,3 +174,52 @@ then check the logs:
 ```bash
 docker compose -f ressources/docker-compose.yml logs -f
 ```
+# 4. Edit server configuration
+
+> 🔧 This file is located in the mounted directory:
+> `/home/enshrouded/enshrouded_server_geproton/enshrouded_server.json`
+
+```bash
+nano enshrouded_server.json
+```
+
+Edit the `enshrouded_server.json` file to configure your server settings.
+
+---
+
+### General Server Settings
+
+| Setting            | Description                                | Example / Default Value | Options / Notes          |
+|--------------------|--------------------------------------------|--------------------------|---------------------------|
+| **name**           | Name of the server                         | "Enshrouded Server"      | Any string                |
+| **saveDirectory**  | Directory where savegames are stored       | "./savegame"             | File path                 |
+| **logDirectory**   | Directory for log files                    | "./logs"                 | File path                 |
+| **ip**             | Server IP binding                          | "0.0.0.0"                | Server ip adress          |
+| ...                | ...                                        | ...                      | ...                       |
+
+... [View full server settings here](https://github.com/bonsaibauer/enshrouded_server_geproton/blob/main/docs/enshrouded_server.md)
+
+> **ℹ️ Note: Nano editor**
+>
+> After editing the `enshrouded_server.json` file, follow these steps to save your changes and exit the Nano editor:
+>
+> 1. **Save**:
+>    - Press `CTRL + O` (this means "Write Out").
+>    - Press `Enter` to confirm and save the file with the current name.
+>
+> 2. **Exit**:
+>    - Press `CTRL + X` to close the Nano editor.
+>
+> You will then return to the regular command line.
+
+# 5. Backup
+
+## Backup
+
+The image includes a backup script that creates a zip file of the last saved game state. To enable backups, set
+the `BACKUP_CRON` environment variable. To limit the number of backups, set the `BACKUP_MAX_COUNT` environment variable.
+
+To restore a backup, stop the server and simply extract the zip file to the savegame folder and start the server up
+again. If you want to keep the current savegame, make sure to make a backup before deleting or overwriting the files.
+Backups are written to `BACKUP_DIR` (default `./backups` inside the mounted server volume — `/home/enshroudedserver/backups` on the host with the provided compose file, or `/opt/enshrouded/server/backups` inside the container).
+
