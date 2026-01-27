@@ -268,6 +268,11 @@ docker restart enshrouded
 docker rm enshrouded
 ```
 ---
+
+# Conclusion
+
+By following this guide, you've set up your own Enshrouded dedicated server on Ubuntu, ready to host your adventures in the mystical world of Embervale. Gather your friends and start your journey in this captivating survival action RPG.
+
 ## Buy Me A Coffee
 If this project has helped you in any way, do buy me a coffee so I can continue to build more of such projects in the future and share them with the community!
 
