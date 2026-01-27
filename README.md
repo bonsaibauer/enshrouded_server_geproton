@@ -225,23 +225,28 @@ Backups are written to `BACKUP_DIR` (default `./backups` inside the mounted serv
 
 # 6. Server Commands
 Supervisor actions inside the running container
-### Force update (delete manifest, run updater to pull latest build)
+### Force update 
+...delete manifest, run updater to pull latest build
   ```bash
 docker compose exec enshrouded supervisorctl start enshrouded-force-update
 ```
-### Reset roles (wipe `userGroups` in config, then stop container for a clean role reload)
+### Reset roles 
+...wipe `userGroups` in config, then stop container for a clean role reload
   ```bash
 docker compose exec enshrouded supervisorctl start enshrouded-reset-roles
 ```  
-### Restart game server process (keeps container up; restarts the binary only)
+### Restart game server process 
+...keeps container up; restarts the binary only
   ```bash
 docker compose exec enshrouded supervisorctl restart enshrouded-server
 ```  
-### Manual backup (immediately zip latest save using current BACKUP_* settings)
+### Manual backup 
+...immediately zip latest save using current BACKUP_* settings
   ```bash
 docker compose exec enshrouded supervisorctl start enshrouded-backup
 ```  
-### Trigger scheduled restart script now (honors RESTART_* checks)  
+### Trigger scheduled restart script now 
+...honors RESTART_* checks
   ```bash
 docker compose exec enshrouded supervisorctl start enshrouded-restart
 ```
