@@ -19,13 +19,8 @@ Grab a potion and read on: this is the most concise guide to spin up your own En
 
 ![Road to Release 2026](images/road_to_release_2026.png)
 
-## Full Settings + Example Config
-
-- All server/gameplay fields are documented in [`docs/enshrouded_server.md`](docs/enshrouded_server.md).
-- A complete sample with every setting populated ships in [`ressources/enshrouded_server.json`](ressources/enshrouded_server.json).
-- The repo Docker assets live in [`ressources/`](ressources); run builds via `docker compose -f ressources/docker-compose.yml up -d`.
-
 ---
+
 # 1. Installing Docker (Ubuntu 24.04 and Other Linux Systems)
 
 Docker allows you to run applications in isolated containers. It's ideal for deploying an Enshrouded dedicated server because it ensures consistency, portability, and easy management.
