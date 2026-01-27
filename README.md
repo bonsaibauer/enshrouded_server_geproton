@@ -246,6 +246,10 @@ docker compose exec enshrouded supervisorctl start enshrouded-backup
 docker compose exec enshrouded supervisorctl start enshrouded-restart
 ```
 
+*Supervisor (`supervisord`) manages the lifecycle of all helper programs inside the container: updater, game server, backup, restart, force-update, reset-roles, and cron. It keeps processes alive, wires their logs to STDOUT, and serializes tasks so updates/backups don’t overlap. The commands above ask `supervisord` to start or restart those programs on demand.*
+
+---
+
 # 7. Docker Commands
 ### Stop container (graceful shutdown; data stays on volume)  
   ```bash
@@ -263,9 +267,7 @@ docker restart enshrouded
 ```bash
 docker rm enshrouded
 ```
-*Supervisor (`supervisord`) manages the lifecycle of all helper programs inside the container: updater, game server, backup, restart, force-update, reset-roles, and cron. It keeps processes alive, wires their logs to STDOUT, and serializes tasks so updates/backups don’t overlap. The commands above ask `supervisord` to start or restart those programs on demand.*
-
-
+---
 ## Buy Me A Coffee
 If this project has helped you in any way, do buy me a coffee so I can continue to build more of such projects in the future and share them with the community!
 
