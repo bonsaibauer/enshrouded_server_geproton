@@ -251,7 +251,8 @@ docker compose exec enshrouded supervisorctl start enshrouded-restart
 ---
 
 # 7. Docker Commands
-### Stop container (graceful shutdown; data stays on volume)  
+### Stop container 
+- graceful shutdown; data stays on volume
   ```bash
 docker stop enshrouded
 ```
