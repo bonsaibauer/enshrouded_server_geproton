@@ -223,3 +223,51 @@ To restore a backup, stop the server and simply extract the zip file to the save
 again. If you want to keep the current savegame, make sure to make a backup before deleting or overwriting the files.
 Backups are written to `BACKUP_DIR` (default `./backups` inside the mounted server volume — `/home/enshroudedserver/backups` on the host with the provided compose file, or `/opt/enshrouded/server/backups` inside the container).
 
+# 6. Server Commands
+Supervisor actions inside the running container
+### Force update (delete manifest, run updater to pull latest build)
+  ```bash
+docker compose exec enshrouded supervisorctl start enshrouded-force-update
+```
+### Reset roles (wipe `userGroups` in config, then stop container for a clean role reload)
+  ```bash
+docker compose exec enshrouded supervisorctl start enshrouded-reset-roles
+```  
+### Restart game server process (keeps container up; restarts the binary only)
+  ```bash
+docker compose exec enshrouded supervisorctl restart enshrouded-server
+```  
+### Manual backup (immediately zip latest save using current BACKUP_* settings)
+  ```bash
+docker compose exec enshrouded supervisorctl start enshrouded-backup
+```  
+### Trigger scheduled restart script now (honors RESTART_* checks)  
+  ```bash
+docker compose exec enshrouded supervisorctl start enshrouded-restart
+```
+
+# 7. Docker Commands
+### Stop container (graceful shutdown; data stays on volume)  
+  ```bash
+docker stop enshrouded
+```
+### Start container (boots existing container with current volumes/config)  
+```bash
+docker start enshrouded
+```
+### Restart container (stop + start; useful after ENV/compose changes)  
+```bash
+docker restart enshrouded
+```
+### Remove container (cleanup only; volumes/images remain)  
+```bash
+docker rm enshrouded
+```
+*Supervisor (`supervisord`) manages the lifecycle of all helper programs inside the container: updater, game server, backup, restart, force-update, reset-roles, and cron. It keeps processes alive, wires their logs to STDOUT, and serializes tasks so updates/backups don’t overlap. The commands above ask `supervisord` to start or restart those programs on demand.*
+
+
+## Buy Me A Coffee
+If this project has helped you in any way, do buy me a coffee so I can continue to build more of such projects in the future and share them with the community!
+
+<a href="https://buymeacoffee.com/bonsaibauer" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
