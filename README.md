@@ -99,3 +99,78 @@ sudo systemctl status docker
 ```
 
 Press `q` to exit the status screen.
+
+# 2. Create user and working directory
+
+To allow the Docker container to persist game data and configurations, we create a dedicated system user and set up the correct directory.
+
+Run these commands as root or with `sudo`:
+
+```bash
+# Create a system user 'enshrouded' without login shell
+sudo useradd -m -r -s /bin/false enshrouded
+
+# Ensure the home directory exists
+sudo mkdir -p /home/enshrouded
+sudo mkdir -p /home/enshrouded/enshrouded_server_geproton
+
+# Set proper ownership 
+sudo chown 1001:1001 /home/enshrouded/enshrouded_server_geproton
+```
+
+> 🛡️ This ensures that the container can write to `/home/enshrouded` and all server data stays in one clean location.
+
+# 3. Deploy and Start docker container
+**Option A: Qickstart: Docker Image (docker run)**
+
+
+
+**Option B: Clone repo (builds image locally)**
+0) Go to Directory:
+```bash
+cd /home/enshrouded/
+```
+1) Clone and enter the repo:
+```bash
+git clone https://github.com/bonsaibauer/enshrouded_server_geproton.git
+cd enshrouded_server_geproton
+```
+2) Edit the bundled compose:
+```bash
+nano ressources/docker-compose.yml
+```
+
+   - The compose file lists all configurable environment variables. By default it:
+     - exposes UDP port `15637` on the host (`SERVER_QUERYPORT` + `ports` mapping) for game queries/traffic.
+     - mounts `/home/enshrouded/enshrouded_server_geproton` into `/opt/enshrouded/server` for saves, logs, and backups.
+     - names the server `Enshrouded Server` with `16` slots, voice/text chat enabled, and `Global` voice mode.
+     - schedules automatic updates hourly (`UPDATE_CRON="0 * * * *"`) and nightly backups at 00:00 (`BACKUP_CRON="0 0 * * *"`, keeping `14` copies).
+     - restarts daily at 03:00 (`RESTART_CRON="0 3 * * *"`) and skips update/restart if players are online (`*_CHECK_PLAYERS=true`).
+     - uses Steam branch `public` and runs `validate` via `STEAMCMD_ARGS`.
+   - Keep these defaults or adjust any env values directly in `ressources/docker-compose.yml` before starting.
+
+### Docker Compose Defaults (Option B)
+
+| Setting / Key | Description | Default in `ressources/docker-compose.yml` | Options / Notes |
+|---------------|-------------|--------------------------------------------|-----------------|
+| **image** / **build** | Uses local build (Dockerfile) and tags image | `mornedhels/enshrouded-server:dev-proton` | Build context `.` with `ressources/Dockerfile` |
+| **ports** | Publishes game/query port | `15637:15637/udp` | Change host port if occupied |
+| **volumes** | Persists saves/logs/backups on host | `/home/enshrouded/enshrouded_server_geproton:/opt/enshrouded/server` | Point to your preferred host path |
+| **SERVER_NAME** | Server name shown in browser | `Enshrouded Server` | Any string |
+| … | …see full list in `docs/environment-variables.md` | … | … |
+
+Full variable descriptions live in `docs/environment-variables.md`. Edit values in `ressources/docker-compose.yml` and save.
+
+> **ℹ️ Nano tip for compose**
+> - Save: `CTRL + O`, then `Enter`
+> - Exit: `CTRL + X`
+> You’ll return to the shell after saving.
+
+3) Start + logs:
+```bash
+docker compose -f ressources/docker-compose.yml up -d
+```
+then check the logs:
+```bash
+docker compose -f ressources/docker-compose.yml logs -f
+```
