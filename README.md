@@ -108,13 +108,19 @@ Run these commands as root or with `sudo`:
 
 ```bash
 # Create a system user 'enshrouded' without login shell
+```bash
 sudo useradd -m -r -s /bin/false enshrouded
-
+```
 # Ensure the home directory exists
+```bash
 sudo mkdir -p /home/enshrouded
+```
+```bash
 sudo mkdir -p /home/enshrouded/enshrouded_server_geproton
+```
 
 # Set proper ownership 
+```bash
 sudo chown 1001:1001 /home/enshrouded/enshrouded_server_geproton
 ```
 
@@ -133,6 +139,8 @@ cd /home/enshrouded/
 1) Clone and enter the repo:
 ```bash
 git clone https://github.com/bonsaibauer/enshrouded_server_geproton.git
+```
+```bash
 cd enshrouded_server_geproton
 ```
 2) Edit the bundled compose:
@@ -149,24 +157,27 @@ nano ressources/docker-compose.yml
      - uses Steam branch `public` and runs `validate` via `STEAMCMD_ARGS`.
    - Keep these defaults or adjust any env values directly in `ressources/docker-compose.yml` before starting.
 
-### Docker Compose Defaults (Option B)
+3) Docker Compose Defaults (Option B)
 
-| Setting / Key | Description | Default in `ressources/docker-compose.yml` | Options / Notes |
-|---------------|-------------|--------------------------------------------|-----------------|
-| **image** / **build** | Uses local build (Dockerfile) and tags image | `mornedhels/enshrouded-server:dev-proton` | Build context `.` with `ressources/Dockerfile` |
-| **ports** | Publishes game/query port | `15637:15637/udp` | Change host port if occupied |
-| **volumes** | Persists saves/logs/backups on host | `/home/enshrouded/enshrouded_server_geproton:/opt/enshrouded/server` | Point to your preferred host path |
-| **SERVER_NAME** | Server name shown in browser | `Enshrouded Server` | Any string |
-| … | …see full list in `docs/environment-variables.md` | … | … |
+| Setting / Key   | Description                                 | Default Value                          | Options / Notes                 |
+|-----------------|---------------------------------------------|----------------------------------------|---------------------------------|
+| **image/build** | Uses bundled Dockerfile to build the image  | `mornedhels/enshrouded-server:dev-proton` | Build context `.` / `ressources/Dockerfile` |
+| **ports**       | Publishes game/query port                   | `15637:15637/udp`                      | Change host port if needed      |
+| **volumes**     | Host path for saves/logs/backups            | `/home/enshrouded/enshrouded_server_geproton:/opt/enshrouded/server` | Point to your preferred path    |
+| **SERVER_NAME** | Server name shown in browser                | `Enshrouded Server`                    | Any string                      |
+| …               | …                                           | …                                      | … (see link below)              |
 
-Full variable descriptions live in `docs/environment-variables.md`. Edit values in `ressources/docker-compose.yml` and save.
+... [View full compose/env list here](docs/environment-variables.md)
 
-> **ℹ️ Nano tip for compose**
-> - Save: `CTRL + O`, then `Enter`
-> - Exit: `CTRL + X`
-> You’ll return to the shell after saving.
+> **ℹ️ Note: Nano editor**
+>
+> After editing `ressources/docker-compose.yml`, save and exit Nano:
+> 1. **Save**: `CTRL + O`, then `Enter`
+> 2. **Exit**: `CTRL + X`
+>
+> You will return to the shell after saving.
 
-3) Start + logs:
+4) Start + logs:
 ```bash
 docker compose -f ressources/docker-compose.yml up -d
 ```
