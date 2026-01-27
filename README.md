@@ -105,9 +105,7 @@ Press `q` to exit the status screen.
 To allow the Docker container to persist game data and configurations, we create a dedicated system user and set up the correct directory.
 
 Run these commands as root or with `sudo`:
-
-```bash
-# Create a system user 'enshrouded' without login shell
+### Create a system user 'enshrouded' without login shell
 ```bash
 sudo useradd -m -r -s /bin/false enshrouded
 ```
