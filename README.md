@@ -111,15 +111,14 @@ Run these commands as root or with `sudo`:
 ```bash
 sudo useradd -m -r -s /bin/false enshrouded
 ```
-# Ensure the home directory exists
+### Ensure the home directory exists
 ```bash
 sudo mkdir -p /home/enshrouded
 ```
 ```bash
 sudo mkdir -p /home/enshrouded/enshrouded_server_geproton
 ```
-
-# Set proper ownership 
+### Set proper ownership 
 ```bash
 sudo chown 1001:1001 /home/enshrouded/enshrouded_server_geproton
 ```
@@ -127,12 +126,7 @@ sudo chown 1001:1001 /home/enshrouded/enshrouded_server_geproton
 > 🛡️ This ensures that the container can write to `/home/enshrouded` and all server data stays in one clean location.
 
 # 3. Deploy and Start docker container
-**Option A: Qickstart: Docker Image (docker run)**
-
-
-
-**Option B: Clone repo (builds image locally)**
-0) Go to Directory:
+1) Go to Directory:
 ```bash
 cd /home/enshrouded/
 ```
@@ -143,7 +137,7 @@ git clone https://github.com/bonsaibauer/enshrouded_server_geproton.git
 ```bash
 cd enshrouded_server_geproton
 ```
-2) Edit the bundled compose:
+1) Edit the bundled compose:
 ```bash
 nano ressources/docker-compose.yml
 ```
@@ -157,7 +151,7 @@ nano ressources/docker-compose.yml
      - uses Steam branch `public` and runs `validate` via `STEAMCMD_ARGS`.
    - Keep these defaults or adjust any env values directly in `ressources/docker-compose.yml` before starting.
 
-3) Docker Compose Defaults (Option B)
+1) Docker Compose Defaults (Option B)
 
 | Setting / Key   | Description                                 | Default Value                          | Options / Notes                 |
 |-----------------|---------------------------------------------|----------------------------------------|---------------------------------|
