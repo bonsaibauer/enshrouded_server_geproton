@@ -22,7 +22,7 @@ RUN curl -sLOJ "https://github.com/GloriousEggroll/proton-ge-custom/releases/dow
 
 
 FROM steamcmd/steamcmd:ubuntu-24@sha256:c3130294ee39a25bb554332240b2053a4e01bb362255f85e010f8fbe78561e92
-LABEL maintainer="mail@philippfeierabend.de"
+LABEL maintainer="docker@mornedhels.de"
 
 # Install dependencies
 RUN dpkg --add-architecture i386 \
