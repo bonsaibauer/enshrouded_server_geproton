@@ -262,26 +262,10 @@ docker run -d \
 
 ... [View full compose/env list here](docs/environment-variables.md)
 
-> **ℹ️ Note: Nano editor**
->
-> After editing `ressources/docker-compose.yml`, save and exit Nano:
-> 1. **Save**: `CTRL + O`, then `Enter`
-> 2. **Exit**: `CTRL + X`
->
-> You will return to the shell after saving.
-
-### Step 3.4 Start + logs:
-```bash
-docker compose -f ressources/docker-compose.yml up -d
-```
-then check the logs:
-```bash
-docker compose -f ressources/docker-compose.yml logs -f
-```
 # 4. Edit server configuration
 
 > 🔧 This file is located in the mounted directory:
-> `/home/enshrouded/enshrouded_server.json`
+> `/home/enshrouded/server/enshrouded_server.json`
 
 ```bash
 nano enshrouded_server.json
