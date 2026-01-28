@@ -97,44 +97,148 @@ sudo systemctl status docker
 
 Press `q` to exit the status screen.
 
-# 2. Create user and working directory
+# 2. Create user, group, and working directory
 
-To allow the Docker container to persist game data and configurations, we create a dedicated system user and set up the correct directory.
+To allow the Docker container to persist game data and configurations in a controlled and reproducible way, a dedicated service user and group with fixed UID/GID are created. Access for the interactive user is granted via group membership and ACLs.
 
-Run these commands as root or with `sudo`:
-### Step 2.1: Create a system user 'enshrouded' without login shell
+All commands must be executed as `root` or with `sudo`.
+
+---
+
+## Step 2.1: Create a dedicated group with fixed GID
+
 ```bash
-sudo useradd -m -r -s /bin/false enshrouded
-```
-### Step 2.2: Ensure the home directory exists
-```bash
-sudo mkdir -p /home/enshrouded
-```
-```bash
-sudo mkdir -p /home/enshrouded/enshrouded_server_geproton
-```
-### Step 2.3 Set proper ownership 
-```bash
-sudo chown 1001:1001 /home/enshrouded/enshrouded_server_geproton
+sudo groupadd -g 4711 enshrouded 2>/dev/null || true
 ```
 
-> 🛡️ This ensures that the container can write to `/home/enshrouded` and all server data stays in one clean location.
+**Validation:**
+```bash
+getent group enshrouded
+```
 
-# 3. Deploy and Start docker container
+Expected result:
+```
+enshrouded:x:4711:
+```
+
+---
+
+## Step 2.2: Create the service user `enshrouded` with fixed UID/GID
+
+The user is created with:
+- UID = 4711  
+- primary group = enshrouded (GID 4711)  
+- home directory `/home/enshrouded`  
+- no interactive login shell  
+
+```bash
+sudo useradd \
+  --uid 4711 \
+  --gid 4711 \
+  --home /home/enshrouded \
+  --create-home \
+  --shell /usr/sbin/nologin \
+  enshrouded
+```
+
+**Validation:**
+```bash
+id enshrouded
+ls -ld /home/enshrouded
+```
+
+Expected result:
+```
+uid=4711(enshrouded) gid=4711(enshrouded)
+drwxr-x--- enshrouded enshrouded /home/enshrouded
+```
+
+---
+
+## Step 2.4: Grant access to the login user via group membership
+
+Add the currently logged-in interactive user to the `enshrouded` group:
+
+```bash
+sudo usermod -aG enshrouded $(whoami)
+```
+
+⚠️ A re-login is mandatory (new SSH session or new shell):
+
+```bash
+newgrp enshrouded
+```
+
+**Validation:**
+```bash
+id $(whoami)
+```
+
+Expected output must include:
+```
+4711(enshrouded)
+```
+
+---
+
+## Step 2.5: Configure ACLs for collaborative access
+
+Grant read/write/execute permissions for the group and ensure inheritance for newly created files:
+
+```bash
+sudo setfacl -R -m g:enshrouded:rwx /home/enshrouded
+sudo setfacl -R -d -m g:enshrouded:rwx /home/enshrouded
+```
+
+This guarantees:
+- persistent group access
+- no permission drift on container restarts
+- correct behavior for bind mounts
+
+---
+
+## Step 2.6: Docker group access (required for container control)
+
+```bash
+sudo groupadd docker 2>/dev/null || true
+sudo usermod -aG docker $(whoami)
+newgrp docker
+```
+
+**Validation:**
+```bash
+docker ps
+```
+
+---
+
+# 3. Docker run
 ### Step 3.1 Go to Directory:
 ```bash
 cd /home/enshrouded/
 ```
-### Step 3.2 Clone and enter the repo:
+### Step 3.2 Copy and paste in shell:
 ```bash
-git clone https://github.com/bonsaibauer/enshrouded_server_geproton.git
-```
-```bash
-cd enshrouded_server_geproton
-```
-### Step 3.3 Edit the bundled compose:
-```bash
-nano ressources/docker-compose.yml
+docker run -d \
+  --name enshrouded \
+  --hostname enshrouded \
+  --restart unless-stopped \
+  --stop-timeout 90 \
+  -p 15637:15637/udp \
+  -v /home/enshrouded:/opt/enshrouded \
+  -e PUID=4711 \
+  -e PGID=4711 \
+  -e UPDATE_CRON="0 * * * *" \
+  -e UPDATE_CHECK_PLAYERS=true \
+  -e BACKUP_CRON="0 0 * * *" \
+  -e BACKUP_DIR="./backups" \
+  -e BACKUP_MAX_COUNT=14 \
+  -e RESTART_CRON="0 3 * * *" \
+  -e RESTART_CHECK_PLAYERS=true \
+  -e GAME_BRANCH="public" \
+  -e STEAMCMD_ARGS="validate" \
+  -e log_level=50 \
+  mornedhels/enshrouded-server:dev-proton
 ```
 
    - The compose file lists all configurable environment variables. By default it:
@@ -177,7 +281,7 @@ docker compose -f ressources/docker-compose.yml logs -f
 # 4. Edit server configuration
 
 > 🔧 This file is located in the mounted directory:
-> `/home/enshrouded/enshrouded_server_geproton/enshrouded_server.json`
+> `/home/enshrouded/enshrouded_server.json`
 
 ```bash
 nano enshrouded_server.json
