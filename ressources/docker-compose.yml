@@ -11,9 +11,8 @@ services:
     ports:
       - "15637:15637/udp"
     volumes:
-      - /home/enshrouded/enshrouded_server_geproton:/opt/enshrouded/server
+      - /home/enshrouded:/opt/enshrouded/server
     environment:
-      - HOME=/home/enshrouded/enshrouded_server_geproton
       - SERVER_NAME=Enshrouded Server
       - SERVER_IP=0.0.0.0
       - SERVER_SLOT_COUNT=16

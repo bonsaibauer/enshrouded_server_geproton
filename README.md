@@ -139,7 +139,7 @@ nano ressources/docker-compose.yml
 
    - The compose file lists all configurable environment variables. By default it:
      - exposes UDP port `15637` on the host (`SERVER_QUERYPORT` + `ports` mapping) for game queries/traffic.
-     - mounts `/home/enshrouded/enshrouded_server_geproton` into `/opt/enshrouded/server` for saves, logs, and backups.
+     - mounts `/home/enshrouded` into `/opt/enshrouded/server` for saves, logs, and backups.
      - names the server `Enshrouded Server` with `16` slots, voice/text chat enabled, and `Global` voice mode.
      - schedules automatic updates hourly (`UPDATE_CRON="0 * * * *"`) and nightly backups at 00:00 (`BACKUP_CRON="0 0 * * *"`, keeping `14` copies).
      - restarts daily at 03:00 (`RESTART_CRON="0 3 * * *"`) and skips update/restart if players are online (`*_CHECK_PLAYERS=true`).
@@ -152,7 +152,7 @@ nano ressources/docker-compose.yml
 |-----------------|---------------------------------------------|----------------------------------------|---------------------------------|
 | **image/build** | Uses bundled Dockerfile to build the image  | `mornedhels/enshrouded-server:dev-proton` | Build context `.` / `ressources/Dockerfile` |
 | **ports**       | Publishes game/query port                   | `15637:15637/udp`                      | Change host port if needed      |
-| **volumes**     | Host path for saves/logs/backups            | `/home/enshrouded/enshrouded_server_geproton:/opt/enshrouded/server` | Point to your preferred path    |
+| **volumes**     | Host path for saves/logs/backups            | `/home/enshrouded:/opt/enshrouded/server` | Point to your preferred path    |
 | **SERVER_NAME** | Server name shown in browser                | `Enshrouded Server`                    | Any string                      |
 | …               | …                                           | …                                      | … (see link below)              |
 
